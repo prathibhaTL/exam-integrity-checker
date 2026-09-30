@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Environment variables / secrets
+.env
+secrets.py
+
+# Application runtime data
+uploads/
+attempts/
+
+# Old development subdirectory
+e/
+
+# Compiled files
+*.pyc
+*.so
+*.dll
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
