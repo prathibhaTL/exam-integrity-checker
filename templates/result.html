@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Integrity Check Result - EXAM Integrity Checker</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="result-page">
+    <div class="container">
+        <!-- Success Animation -->
+        <div class="success-animation">
+            <div class="checkmark-circle">
+                <div class="checkmark"></div>
+            </div>
+            <h1 class="result-title">🎉 Integrity Check Completed!</h1>
+        </div>
+        
+        <!-- Score Card -->
+        <div class="score-card">
+            <div class="score-header">
+                <h2>🎯 Your Performance</h2>
+                <div class="student-badge">
+                    <span class="student-icon">🎓</span>
+                    <span>{{ attempt.student_name }}</span>
+                </div>
+            </div>
+            
+            <div class="score-main">
+                <div class="score-circle">
+                    <svg viewBox="0 0 200 200">
+                        <circle cx="100" cy="100" r="90" class="score-circle-bg"></circle>
+                        <circle cx="100" cy="100" r="90" class="score-circle-progress" 
+                                style="stroke-dasharray: {{ (attempt.score_data.percentage / 100 * 565) }}, 565;"></circle>
+                    </svg>
+                    <div class="score-percentage">
+                        <span class="percentage-value">{{ attempt.score_data.percentage }}%</span>
+                        <span class="percentage-label">Score</span>
+                    </div>
+                </div>
+                
+                <div class="score-details">
+                    <div class="score-item">
+                        <div class="score-icon">🎯</div>
+                        <div class="score-info">
+                            <div class="score-value">{{ attempt.score_data.total_score }}/{{ attempt.score_data.max_score }}</div>
+                            <div class="score-label">Total Points</div>
+                        </div>
+                    </div>
+                    
+                    <div class="score-item">
+                        <div class="score-icon">✅</div>
+                        <div class="score-info">
+                            <div class="score-value">{{ attempt.score_data.mcq_score }}</div>
+                            <div class="score-label">MCQ Points</div>
+                        </div>
+                    </div>
+                    
+                    <div class="score-item">
+                        <div class="score-icon">✍️</div>
+                        <div class="score-info">
+                            <div class="score-value">{{ "%.2f"|format(attempt.score_data.desc_score) }}</div>
+                            <div class="score-label">Descriptive Points</div>
+                        </div>
+                    </div>
+                    
+                    <div class="score-item">
+                        <div class="score-icon">🕒</div>
+                        <div class="score-info">
+                            <div class="score-value">{{ attempt.timestamp }}</div>
+                            <div class="score-label">Completed</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Performance Message -->
+            <div class="performance-message {{ 'excellent' if attempt.score_data.percentage >= 80 else 'good' if attempt.score_data.percentage >= 60 else 'average' }}">
+                {% if attempt.score_data.percentage >= 80 %}
+                    <span class="message-icon">🏆</span>
+                    <span class="message-text">Excellent Work! You've mastered this topic!</span>
+                {% elif attempt.score_data.percentage >= 60 %}
+                    <span class="message-icon">👍</span>
+                    <span class="message-text">Good Job! Keep practicing to improve further.</span>
+                {% else %}
+                    <span class="message-icon">💪</span>
+                    <span class="message-text">Keep Learning! Review the material and try again.</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Detailed Breakdown -->
+        <div class="breakdown-section">
+            <h3>📊 Detailed Breakdown</h3>
+            
+            <div class="breakdown-card">
+                <h4>🎯 Multiple Choice Questions</h4>
+                <div class="breakdown-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Total Questions:</span>
+                        <span class="stat-value">{{ attempt.mcqs|length }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Correct Answers:</span>
+                        <span class="stat-value success">{{ attempt.score_data.mcq_correct }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Accuracy:</span>
+                        <span class="stat-value">{{ "%.1f"|format((attempt.score_data.mcq_correct / attempt.mcqs|length * 100) if attempt.mcqs|length > 0 else 0) }}%</span>
+                    </div>
+                </div>
+                
+                <div class="answers-review">
+                    {% for i in range(attempt.mcqs|length) %}
+                    <div class="answer-item {{ 'correct' if attempt.mcq_answers[i] == attempt.mcqs[i].answer else 'incorrect' }}">
+                        <div class="answer-header">
+                            <span class="answer-number">Q{{ i+1 }}</span>
+                            <span class="difficulty-badge difficulty-{{ attempt.mcqs[i].get('difficulty', 'medium') }}">
+                                {{ attempt.mcqs[i].get('difficulty', 'medium') }}
+                            </span>
+                            {% if attempt.mcq_answers[i] == attempt.mcqs[i].answer %}
+                                <span class="result-badge success">✓ Correct</span>
+                            {% else %}
+                                <span class="result-badge error">✗ Incorrect</span>
+                            {% endif %}
+                        </div>
+                        <div class="answer-question">{{ attempt.mcqs[i].question }}</div>
+                        <div class="answer-comparison">
+                            <div class="your-answer">
+                                <strong>Your answer:</strong> {{ attempt.mcq_answers[i] or 'Not answered' }}
+                            </div>
+                            <div class="correct-answer">
+                                <strong>Correct answer:</strong> {{ attempt.mcqs[i].answer }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="breakdown-card">
+                <h4>✍️ Descriptive Questions</h4>
+                <div class="answers-review">
+                    {% for i in range(attempt.descriptives|length) %}
+                    <div class="answer-item descriptive">
+                        <div class="answer-header">
+                            <span class="answer-number">Q{{ i+1 }}</span>
+                            <span class="difficulty-badge difficulty-{{ attempt.descriptives[i].get('difficulty', 'medium') }}">
+                                {{ attempt.descriptives[i].get('difficulty', 'medium') }}
+                            </span>
+                        </div>
+                        <div class="answer-question">{{ attempt.descriptives[i].question }}</div>
+                        <div class="your-answer-full">
+                            <strong>Your Answer:</strong>
+                            <p>{{ attempt.desc_answers[i] or 'Not answered' }}</p>
+                        </div>
+                        <div class="keywords-info">
+                            <strong>💡 Expected Keywords:</strong>
+                            <div class="keywords-list">
+                                {% for keyword in attempt.descriptives[i].get('keywords', []) %}
+                                <span class="keyword-tag {{ 'found' if keyword.lower() in (attempt.desc_answers[i] or '').lower() else 'missing' }}">
+                                    {{ keyword }}
+                                    {% if keyword.lower() in (attempt.desc_answers[i] or '').lower() %}✓{% endif %}
+                                </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <a href="{{ url_for('download_pdf', attempt_id=attempt_id) }}" class="btn-action btn-primary">
+                <span>📄</span> Download PDF Report
+            </a>
+            <a href="{{ url_for('index') }}" class="btn-action btn-secondary">
+                <span>🏠</span> Back to Home
+            </a>
+            <a href="{{ url_for('results_list') }}" class="btn-action btn-secondary">
+                <span>📊</span> View All Results
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+// Animate score on load
+window.addEventListener('load', function() {
+    const circle = document.querySelector('.score-circle-progress');
+    if (circle) {
+        circle.style.transition = 'stroke-dasharray 1.5s ease-out';
+    }
+});
+</script>
+</body>
+</html>

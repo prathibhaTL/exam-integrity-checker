@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Integrity Check Exam - EXAM Integrity Checker</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="exam-page">
+    <!-- Fixed Header -->
+    <div class="exam-header">
+        <div class="container">
+            <div class="header-content">
+                <div class="student-info">
+                    <span class="student-icon">🔒</span>
+                    <span class="student-name">{{ student_name }} - Integrity Check</span>
+                </div>
+                <div class="timer-section">
+                    <div id="timer" class="timer">
+                        <span class="timer-icon">⏱️</span>
+                        <span class="timer-label">Time Left:</span>
+                        <span id="time" class="timer-value">30:00</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="progress-container">
+                <div class="progress-info">
+                    <span>Progress: <span id="progressText">0/{{ total_questions }}</span></span>
+                    <span id="unansweredCount" class="unanswered-badge">{{ total_questions }} unanswered</span>
+                </div>
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-fill"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="container exam-content">
+        <form method="POST" id="examForm">
+            <!-- Control Buttons -->
+            <div class="control-panel">
+                <button type="button" class="btn-control" onclick="readAloud()">
+                    <span>🔊</span> Read Questions Aloud
+                </button>
+                <button type="button" class="btn-control" onclick="highlightUnanswered()">
+                    <span>🔦</span> Highlight Unanswered
+                </button>
+                <button type="button" class="btn-control" onclick="scrollToNext()">
+                    <span>⬇️</span> Next Question
+                </button>
+            </div>
+            
+            <!-- MCQ Section -->
+            <div class="section-header">
+                <h2>🎯 Multiple Choice Questions</h2>
+                <span class="section-badge">{{ mcqs|length }} questions - 2 points each</span>
+            </div>
+            
+            {% for i in range(mcqs|length) %}
+            <div class="question-card mcq-card" data-question-id="mcq_{{ i }}" data-answered="false">
+                <div class="question-header">
+                    <span class="question-number">Question {{ i+1 }}</span>
+                    <span class="difficulty-badge difficulty-{{ mcqs[i].get('difficulty', 'medium') }}">
+                        {{ mcqs[i].get('difficulty', 'medium').upper() }}
+                    </span>
+                </div>
+                <p class="question-text">{{ mcqs[i]['question'] }}</p>
+                <div class="options-container">
+                    {% for option in mcqs[i]['options'] %}
+                    <label class="option-label">
+                        <input type="radio" name="mcq_{{ i }}" value="{{ option }}" onchange="updateProgress()">
+                        <span class="option-content">
+                            <span class="option-marker"></span>
+                            <span class="option-text">{{ option }}</span>
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+            
+            <!-- Descriptive Section -->
+            <div class="section-header">
+                <h2>✍️ Descriptive Questions</h2>
+                <span class="section-badge">{{ descriptives|length }} questions - 3 points each</span>
+            </div>
+            
+            {% for i in range(descriptives|length) %}
+            <div class="question-card desc-card" data-question-id="desc_{{ i }}" data-answered="false">
+                <div class="question-header">
+                    <span class="question-number">Question {{ mcqs|length + i + 1 }}</span>
+                    <span class="difficulty-badge difficulty-{{ descriptives[i].get('difficulty', 'medium') }}">
+                        {{ descriptives[i].get('difficulty', 'medium').upper() }}
+                    </span>
+                </div>
+                <p class="question-text">{{ descriptives[i]['question'] }}</p>
+                <div class="hint-box">
+                    <span class="hint-icon">💡</span>
+                    <span class="hint-text">Hint: Include keywords like {{ descriptives[i].get('keywords', [])[:3]|join(', ') }}</span>
+                </div>
+                <textarea 
+                    name="desc_{{ i }}" 
+                    rows="5" 
+                    placeholder="Type your detailed answer here...\n\nMake sure to cover key concepts and provide examples." 
+                    oninput="updateProgress()"
+                    class="answer-textarea"></textarea>
+                <div class="char-counter" data-textarea="desc_{{ i }}">0 words</div>
+            </div>
+            {% endfor %}
+            
+            <!-- Submit Section -->
+            <div class="submit-section">
+                <div class="submit-warning" id="submitWarning" style="display: none;">
+                    <span class="warning-icon">⚠️</span>
+                    <span>You have <span id="unansweredCountSubmit"></span> unanswered questions!</span>
+                </div>
+                <button type="button" onclick="confirmSubmit()" class="btn-submit">
+                    <span>✅</span> Submit Exam
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='main.js') }}"></script>
+<script>
+// Initialize exam
+const totalQuestions = {{ total_questions }};
+let answeredCount = 0;
+
+// Start timer
+startTimer(30, "time", "examForm");
+
+// Update progress
+function updateProgress() {
+    const mcqs = document.querySelectorAll('input[type="radio"]:checked');
+    const textareas = Array.from(document.querySelectorAll('.answer-textarea')).filter(ta => ta.value.trim().length > 0);
+    
+    answeredCount = mcqs.length + textareas.length;
+    const unanswered = totalQuestions - answeredCount;
+    
+    document.getElementById('progressText').textContent = answeredCount + '/' + totalQuestions;
+    document.getElementById('unansweredCount').textContent = unanswered + ' unanswered';
+    
+    const percentage = (answeredCount / totalQuestions) * 100;
+    document.getElementById('progressFill').style.width = percentage + '%';
+    
+    // Update card status
+    document.querySelectorAll('.question-card').forEach(card => {
+        const questionId = card.dataset.questionId;
+        if (questionId.startsWith('mcq_')) {
+            const radio = card.querySelector('input[type="radio"]:checked');
+            card.dataset.answered = radio ? 'true' : 'false';
+        } else {
+            const textarea = card.querySelector('textarea');
+            card.dataset.answered = textarea && textarea.value.trim().length > 0 ? 'true' : 'false';
+        }
+    });
+    
+    // Word counter for textareas
+    document.querySelectorAll('.answer-textarea').forEach(textarea => {
+        const counter = document.querySelector(`.char-counter[data-textarea="${textarea.name}"]`);
+        if (counter) {
+            const words = textarea.value.trim().split(/\s+/).filter(w => w.length > 0).length;
+            counter.textContent = words + ' words';
+        }
+    });
+}
+
+function highlightUnanswered() {
+    document.querySelectorAll('.question-card').forEach(card => {
+        if (card.dataset.answered === 'false') {
+            card.classList.add('unanswered-highlight');
+            setTimeout(() => card.classList.remove('unanswered-highlight'), 2000);
+        }
+    });
+}
+
+function scrollToNext() {
+    const unanswered = Array.from(document.querySelectorAll('.question-card')).find(card => card.dataset.answered === 'false');
+    if (unanswered) {
+        unanswered.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        unanswered.classList.add('pulse-animation');
+        setTimeout(() => unanswered.classList.remove('pulse-animation'), 1000);
+    } else {
+        alert('✅ All questions answered! You can submit now.');
+    }
+}
+
+function confirmSubmit() {
+    updateProgress();
+    const unanswered = totalQuestions - answeredCount;
+    
+    if (unanswered > 0) {
+        document.getElementById('submitWarning').style.display = 'flex';
+        document.getElementById('unansweredCountSubmit').textContent = unanswered;
+        
+        if (confirm(`You have ${unanswered} unanswered questions!\n\nAre you sure you want to submit?`)) {
+            document.getElementById('examForm').submit();
+        }
+    } else {
+        if (confirm('✅ All questions answered!\n\nSubmit your exam now?')) {
+            document.getElementById('examForm').submit();
+        }
+    }
+}
+
+// Initial progress update
+updateProgress();
+</script>
+</body>
+</html>

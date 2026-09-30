@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All Integrity Checks - EXAM Integrity Checker</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="results-page">
+    <div class="container">
+      <div class="page-header">
+        <h1>📊 All Integrity Check Attempts</h1>
+        <p class="subtitle">Track your assessment progress and verify learning integrity over time</p>
+      </div>
+      
+      {% if attempts %}
+        <div class="stats-overview">
+          <div class="stat-card">
+            <div class="stat-icon">📝</div>
+            <div class="stat-content">
+              <div class="stat-value">{{ attempts|length }}</div>
+              <div class="stat-label">Total Attempts</div>
+            </div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-icon">🎯</div>
+            <div class="stat-content">
+              {% set total_pct = namespace(value=0) %}
+              {% for a in attempts %}
+                {% set total_pct.value = total_pct.value + a.score_data.get('percentage', 0) %}
+              {% endfor %}
+              <div class="stat-value">{{ "%.1f"|format((total_pct.value / attempts|length) if attempts|length > 0 else 0) }}%</div>
+              <div class="stat-label">Average Score</div>
+            </div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-icon">🏆</div>
+            <div class="stat-content">
+              {% set excellent_count = namespace(value=0) %}
+              {% for a in attempts %}
+                {% if a.score_data.get('percentage', 0) >= 80 %}
+                  {% set excellent_count.value = excellent_count.value + 1 %}
+                {% endif %}
+              {% endfor %}
+              <div class="stat-value">{{ excellent_count.value }}</div>
+              <div class="stat-label">Excellent Scores</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="attempts-list">
+          {% for attempt in attempts %}
+          <div class="attempt-card">
+            <div class="attempt-header">
+              <div class="attempt-info">
+                <h3 class="student-name">
+                  <span class="name-icon">🎓</span>
+                  {{ attempt.student_name }}
+                </h3>
+                <div class="attempt-meta">
+                  <span class="meta-item">
+                    <span class="meta-icon">🕒</span>
+                    {{ attempt.timestamp }}
+                  </span>
+                </div>
+              </div>
+              
+              <div class="score-badge {{ 'excellent' if attempt.score_data.get('percentage', 0) >= 80 else 'good' if attempt.score_data.get('percentage', 0) >= 60 else 'average' }}">
+                <div class="badge-score">{{ attempt.score_data.get('percentage', 0) }}%</div>
+                <div class="badge-label">
+                  {% if attempt.score_data.get('percentage', 0) >= 80 %}
+                    Excellent
+                  {% elif attempt.score_data.get('percentage', 0) >= 60 %}
+                    Good
+                  {% else %}
+                    Average
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            
+            <div class="attempt-stats">
+              <div class="stat-item-small">
+                <span class="stat-label-small">Total Score:</span>
+                <span class="stat-value-small">{{ attempt.score_data.get('total_score', 0) }}/{{ attempt.score_data.get('max_score', 0) }}</span>
+              </div>
+              <div class="stat-item-small">
+                <span class="stat-label-small">MCQ Correct:</span>
+                <span class="stat-value-small">{{ attempt.score_data.get('mcq_correct', 0) }}</span>
+              </div>
+              <div class="stat-item-small">
+                <span class="stat-label-small">Descriptive:</span>
+                <span class="stat-value-small">{{ "%.2f"|format(attempt.score_data.get('desc_score', 0)) }}</span>
+              </div>
+            </div>
+            
+            <div class="attempt-actions">
+              <a href="{{ url_for('result', attempt_id=attempt.id) }}" class="btn-small btn-view">
+                <span>👁️</span> View Details
+              </a>
+              <a href="{{ url_for('download_pdf', attempt_id=attempt.id) }}" class="btn-small btn-download">
+                <span>📄</span> Download PDF
+              </a>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-icon">📂</div>
+          <h2>No Attempts Yet</h2>
+          <p>Start your first exam to see your progress here!</p>
+          <a href="{{ url_for('index') }}" class="btn-primary">
+            <span>🚀</span> Start New Exam
+          </a>
+        </div>
+      {% endif %}
+      
+      <div class="footer-actions">
+        <a href="{{ url_for('index') }}" class="btn-secondary">
+          <span>🏠</span> Back to Home
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

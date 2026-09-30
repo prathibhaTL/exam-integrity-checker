@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EXAM Integrity Checker - AI-Powered Assessment System</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="hero-section">
+    <div class="container">
+        <div class="logo-container">
+            <div class="logo-icon">📚</div>
+            <h1 class="main-title">EXAM Integrity Checker</h1>
+            <p class="subtitle">AI-Powered Assessment System - Verify Knowledge, Ensure Understanding</p>
+        </div>
+        
+        <div class="card welcome-card">
+            <h2>Welcome to EXAM Integrity Checker! 🎯</h2>
+            <p class="main-description">Transform your study materials into comprehensive assessments with intelligent question generation and integrity verification</p>
+            
+            <div class="app-description">
+                <p class="description-text">
+                    📚 <strong>Smart Learning Made Simple:</strong> Upload any document (PDF, Word, Image) or paste your lesson text. 
+                    Our AI instantly generates customized MCQs and descriptive questions with multiple difficulty levels.
+                </p>
+                <p class="description-text">
+                    ⚡ <strong>Features:</strong> Timed exams • Auto-save progress • Real-time scoring • Keyword-based evaluation • 
+                    PDF reports • Text-to-speech • Progress tracking • Integrity monitoring
+                </p>
+                <p class="description-highlight">
+                    🎓 Perfect for students, educators, and self-learners who want to test knowledge effectively!
+                </p>
+            </div>
+        </div>
+        
+        <form method="POST" enctype="multipart/form-data" id="uploadForm" class="upload-form">
+            <div class="form-group">
+                <label for="student_name">
+                    <span class="label-icon">👤</span>
+                    Student Name
+                </label>
+                <input type="text" id="student_name" name="student_name" placeholder="Enter your name" required class="input-animated">
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    <span class="label-icon">🔢</span>
+                    How many questions do you want?
+                </label>
+                <div class="question-count-selector">
+                    <div class="count-group">
+                        <label for="mcq_count">
+                            <span class="count-icon">✅</span>
+                            MCQ Questions
+                        </label>
+                        <input type="number" id="mcq_count" name="mcq_count" min="1" max="100" value="6" required class="input-animated" placeholder="Enter number (1-100)">
+                        <small style="color: #6c757d; font-size: 0.85em; display: block; margin-top: 5px;">Enter any number from 1 to 100</small>
+                    </div>
+                    
+                    <div class="count-group">
+                        <label for="desc_count">
+                            <span class="count-icon">✍️</span>
+                            Descriptive Questions
+                        </label>
+                        <input type="number" id="desc_count" name="desc_count" min="1" max="50" value="3" required class="input-animated" placeholder="Enter number (1-50)">
+                        <small style="color: #6c757d; font-size: 0.85em; display: block; margin-top: 5px;">Enter any number from 1 to 50</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    <span class="label-icon">📝</span>
+                    Choose Your Input Method
+                </label>
+                <div class="input-method-selector">
+                    <button type="button" class="method-btn active" onclick="selectMethod('text')">
+                        <span class="method-icon">✍️</span>
+                        Paste Text
+                    </button>
+                    <button type="button" class="method-btn" onclick="selectMethod('file')">
+                        <span class="method-icon">📁</span>
+                        Upload File
+                    </button>
+                </div>
+            </div>
+            
+            <div id="textMethod" class="input-section">
+                <label for="lesson_text">
+                    <span class="label-icon">📄</span>
+                    Paste Your Lesson Content
+                </label>
+                <textarea id="lesson_text" name="lesson_text" placeholder="Paste your lesson text here...\n\nThe AI will analyze your content and generate intelligent questions with varying difficulty levels!" rows="10"></textarea>
+                <div class="char-counter" id="charCounter">0 characters</div>
+            </div>
+            
+            <div id="fileMethod" class="input-section" style="display: none;">
+                <label for="lesson_file">
+                    <span class="label-icon">📎</span>
+                    Upload Document (PDF, DOC, DOCX, or Image)
+                </label>
+                <div class="file-upload-wrapper">
+                    <input type="file" id="lesson_file" name="lesson_file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" onchange="displayFileName(this)">
+                    <label for="lesson_file" class="file-upload-label">
+                        <span class="upload-icon">☁️</span>
+                        <span class="upload-text">Click to browse or drag & drop</span>
+                        <span class="file-types">Supports: PDF, DOC, DOCX, PNG, JPG</span>
+                    </label>
+                    <div id="fileName" class="file-name"></div>
+                </div>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-item">
+                    <span class="feature-icon">🎯</span>
+                    <span>Multiple Difficulty Levels</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">⏱️</span>
+                    <span>Timed Exam Mode</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🔊</span>
+                    <span>Text-to-Speech</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📊</span>
+                    <span>Detailed Analytics</span>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn-primary btn-large">
+                <span class="btn-icon">🚀</span>
+                Generate Integrity Check Exam
+            </button>
+        </form>
+        
+        <div class="footer-links">
+            <a href="{{ url_for('results_list') }}" class="link-btn">
+                <span>📈</span> View Previous Attempts
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+function selectMethod(method) {
+    const textBtn = document.querySelector('.method-btn:first-child');
+    const fileBtn = document.querySelector('.method-btn:last-child');
+    const textSection = document.getElementById('textMethod');
+    const fileSection = document.getElementById('fileMethod');
+    const textInput = document.getElementById('lesson_text');
+    const fileInput = document.getElementById('lesson_file');
+    
+    if (method === 'text') {
+        textBtn.classList.add('active');
+        fileBtn.classList.remove('active');
+        textSection.style.display = 'block';
+        fileSection.style.display = 'none';
+        // Clear file input when switching to text
+        fileInput.value = '';
+        document.getElementById('fileName').textContent = '';
+        document.getElementById('fileName').style.display = 'none';
+    } else {
+        fileBtn.classList.add('active');
+        textBtn.classList.remove('active');
+        fileSection.style.display = 'block';
+        textSection.style.display = 'none';
+        // Don't clear text input to allow fallback
+    }
+}
+
+function displayFileName(input) {
+    const fileName = document.getElementById('fileName');
+    if (input.files && input.files[0]) {
+        fileName.textContent = '📎 ' + input.files[0].name;
+        fileName.style.display = 'block';
+    }
+}
+
+// Character counter
+const textarea = document.getElementById('lesson_text');
+const counter = document.getElementById('charCounter');
+if (textarea && counter) {
+    textarea.addEventListener('input', function() {
+        const count = this.value.length;
+        counter.textContent = count + ' characters';
+        counter.style.color = count > 100 ? '#28a745' : '#6c757d';
+    });
+}
+
+// Form validation
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    const text = document.getElementById('lesson_text').value.trim();
+    const file = document.getElementById('lesson_file').files[0];
+    const mcqCount = parseInt(document.getElementById('mcq_count').value);
+    const descCount = parseInt(document.getElementById('desc_count').value);
+    
+    // Check if either text or file is provided
+    if (!text && !file) {
+        e.preventDefault();
+        alert('⚠️ Please provide lesson content by pasting text or uploading a file!');
+        return false;
+    }
+    
+    // Validate question counts
+    if (mcqCount < 1 || mcqCount > 100) {
+        e.preventDefault();
+        alert('⚠️ MCQ count must be between 1 and 100!');
+        return false;
+    }
+    
+    if (descCount < 1 || descCount > 50) {
+        e.preventDefault();
+        alert('⚠️ Descriptive question count must be between 1 and 50!');
+        return false;
+    }
+});
+</script>
+</body>
+</html>
